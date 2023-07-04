@@ -1,7 +1,12 @@
-from flask import Flask, render_template, request
-from datetime import datetime
+from flask import Flask, render_template, request, make_response
+import pdfkit
 
 app = Flask(__name__)
+
+def custom_zip(*iterables):
+    return zip(*iterables)
+
+app.jinja_env.filters['custom_zip'] = custom_zip
 
 @app.route('/')
 def home():
@@ -9,24 +14,23 @@ def home():
 
 @app.route('/generate_invoice', methods=['POST'])
 def generate_invoice():
+    invoice_number = request.form['invoice_number']
     customer_name = request.form['customer_name']
     items = request.form.getlist('item')
-    quantities = request.form.getlist('quantity')
-    prices = request.form.getlist('price')
+    quantities = [int(quantity) for quantity in request.form.getlist('quantity')]
+    prices = [float(price) for price in request.form.getlist('price')]
 
-    for quantity, price in zip(quantities, prices):
-        if not quantity.isdigit() or float(price) <= 0:
-            return render_template('index.html', error_message='Invalid input. Please enter valid quantities and prices.')
+    rendered_invoice = render_template('invoice.html', invoice_number=invoice_number, customer_name=customer_name,
+                                       items=items, quantities=quantities, prices=prices)
 
-    total_amount = sum([int(qty) * float(price) for qty, price in zip(quantities, prices)])
 
-    invoice_number = datetime.now().strftime('%Y%m%d%H%M%S')
-    current_date = datetime.now().strftime('%Y-%m-%d')
+    pdf = pdfkit.from_string(rendered_invoice, False,configuration=pdfkit.configuration(wkhtmltopdf='C:\Program Files\wkhtmltopdf/bin/wkhtmltopdf.exe'))
 
-    invoice_data = zip(items, quantities, prices)
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment; filename=invoice.pdf'
 
-    return render_template('invoice.html', invoice_number=invoice_number, current_date=current_date,
-                           customer_name=customer_name, invoice_data=invoice_data, total_amount=total_amount)
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
