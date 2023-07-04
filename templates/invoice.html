@@ -5,28 +5,23 @@
 </head>
 <body>
     <h1>Invoice</h1>
-    <h3>Invoice Number: {{ invoice_number }}</h3>
-    <h3>Date: {{ current_date }}</h3>
+    <h2>Invoice Number: {{ invoice_number }}</h2>
     <h3>Customer Name: {{ customer_name }}</h3>
     <table>
         <tr>
             <th>Item</th>
             <th>Quantity</th>
             <th>Price</th>
-            <th>Amount</th>
+            <th>Total</th>
         </tr>
-        {% for item, quantity, price in invoice_data %}
+        {% for item, quantity, price in items|custom_zip(quantities, prices) %}
         <tr>
             <td>{{ item }}</td>
             <td>{{ quantity }}</td>
             <td>{{ price }}</td>
-            <td>{{ quantity|int * price|float }}</td>
+            <td>{{ quantity * price }}</td>
         </tr>
         {% endfor %}
-        <tr>
-            <td colspan="3" style="text-align: right;"><strong>Total Amount:</strong></td>
-            <td>{{ total_amount }}</td>
-        </tr>
     </table>
 </body>
 </html>
